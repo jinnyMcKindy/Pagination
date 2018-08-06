@@ -1,0 +1,5 @@
+var DotComponent = Vue.component('dot-component', {
+  props : ["Max", "value"],
+  template: `<div v-on:click="$emit('click-dots', value)" v-if="Max">...</div>`,
+
+});

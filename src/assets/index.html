@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Pagination VueJS</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet/less" type="text/css" href="assets/less/new_c2c.css" />
+    </head>
+    <body>
+        <div  id="c2c-search" class="c2c__new-header">
+        <div class="c2c-menu">
+            <div class="c2c__menu-right">
+                <div class="c2c_search">
+                    <img v-on:click='show = !show' src="assets/img/c2c_search.png" />
+                </div>
+            </div>
+        </div>
+       <transition name="fade">
+           <div class="c2c-search_wrap" v-show="show">
+                <search-input v-model="searchText" v-on:send-data="sendData" v-on:close-form="show = !show"></search-input>
+                <search-content></search-content>
+           </div>
+        </transition>
+    </div>
+<div class="c2c_page c2c_search">
+    <div class="rasporka big"></div>
+    <div class="c2c_content">
+        <div class="c2c-srch" id="searchText">
+            <div v-show="loader">
+                <img class="loader" src="assets/img/lg.palette-rotating-ring-loader.gif"/>
+            </div>
+            <div v-cloak v-if="!loader" class="searchText__content">
+                <div v-if='shownotfound' class="not-found">
+                    Совпадений не найдено <a v-bind:href="oldUrl" class='continue'>продолжить работу</a>
+                </div>
+                <div v-else>
+                    <div class="response">Нашел {{size}} ответа</div>
+                    <results class="srch-results" v-for="result in visible" 
+                           v-bind:title="result.title"
+                           v-bind:description="result.description"
+                           v-bind:url="result.url"
+                        v-bind:href="result.url"> 
+                    </results>
+                   <div class="pagination">
+                        <dot-component v-bind:Max="leftMax" v-on:click-dots="clickDots" value="left"></dot-component>
+                        <page-component v-for="(page, index) in range(first, visiblePages)" v-on:navigate-of="navigate(page)" 
+                                        v-bind:page="page" 
+                                        v-bind:class="['page-' + page]"
+                                        ></page-component>
+                         <dot-component v-bind:Max="rightMax" v-on:click-dots="clickDots" value="right"></dot-component>
+                    </div>
+                </div>
+            </div>
+        </div> <!-- end of searchblock -->
+    </div> <!-- end of page content -->
+</div>
+<script
+  src="https://code.jquery.com/jquery-3.3.1.min.js"
+  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+  crossorigin="anonymous"></script>
+   <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>    
+   <script >
+
+       var site_search = $("#site_search"), 
+        url = window.location.protocol+"//"+window.location.hostname +"/search", 
+        url2 = window.location.protocol+"//"+window.location.hostname +"/specials/search", 
+        search_wrap = $(".c2c-search_wrap"),
+        c2c_search = $("#search-open"),
+        cur_href = window.location.href, 
+        perPage = 10, 
+        maxAmountOfPages = 10;
+
+
+function IsJsonString(str) {
+    try {
+        JSON.parse(str);
+    } catch (e) {
+        return false;
+    }
+    return true;
+}
+$(".open_map").on("click", function () {
+    $(".map_tg").toggleClass("open");
+});
+$("#send_pack").on("click", function(e){
+    e.preventDefault();
+    $(".show_pack").slideToggle();
+});
+
+
+// Определяем новый компонент, поле поиска 
+Vue.component('search-input', {
+     props: ['value'],
+     template: `<div class="c2c-menu__search"> 
+                <form  @submit.stop.prevent="" v-on:submit="$emit('send-data')" class="c2c_form">
+                    <input v-bind:value="value" v-on:input="$emit('input', $event.target.value)" class="input" type="text" placeholder="Поиск по сайту"/> 
+                </form>
+                <div class="c2c_search srch-close" v-on:click="$emit('close-form')">
+                    <i class="fas fa-lg fa-times"></i> 
+                </div>
+            </div>`
+});
+// Определяем новый компонент, рендер результатов
+var SearchContent = Vue.component('search-content', {
+  template: `<div class="search-content"></div>`
+});
+
+var Results = Vue.component('results', {
+  props : ["title", "description", "url", "href"],
+  template: `<div>
+                <div class='srch-title'>
+                    {{title}}
+                </div>
+                <div class='srch-description'>
+                    {{description}}
+                </div>
+                <div class='srch-url'>
+                    <a :href="url">{{url}}</a>
+                </div>
+            </div>`
+});
+
+var PageComponent = Vue.component('page-component', {
+  props : ["page", "maxAmount"],
+  template: `<div v-on:click="$emit('navigate-of')" class="page">{{page}}</div>`,
+
+});
+
+var DotComponent = Vue.component('dot-component', {
+  props : ["Max", "value"],
+  template: `<div v-on:click="$emit('click-dots', value)" v-if="Max">...</div>`,
+
+});
+
+var vm = new Vue({ 
+    el: '#searchText', 
+    data : { 
+       text : "",
+       shownotfound: false,
+       results : {},  //all results
+       size : 0,
+       pages: 0,
+       visiblePages: 0,
+       perPage: perPage,
+       visible : {}, //visible results, 
+       rightMax: false,
+       leftMax: false,
+       first: 1,
+       dirty: true,
+       loader : true,
+       oldUrl : ""
+      
+    },
+    components: {
+        Results, PageComponent, DotComponent
+    },
+    methods: { 
+        setResults : function( json ){
+            this.results = json;
+            this.size = json.length; //количество найденных совпадений
+            this.setPages(json.length); //высчитываем кол-во страниц для пагинации
+            this.loader = false;
+        },
+        setPages : function(len){
+            if( len <= this.perPage ){ //если вывод списка помещается на 1 страницу
+               vm2.pagination = false;
+               this.pages = 0; //цифры пагинации
+               this.visible = this.results; //выводим результаты
+               return;
+            }
+            vm2.pagination = true;
+            var pages = Math.ceil( len/ this.perPage );
+            this.pages = pages;
+            this.navigate(1); //навигация с 1 страницы
+        },
+        navigate : function ( indexPage ) {
+            var end = indexPage-1; //если кликнутый оффсет равен 2, то обрезаем с 10, если 1, то с 0
+            var offset = this.perPage * end; //находим индекс, с которого обрезаем массив
+            this.visible = Object.values( this.results ).splice( offset, this.perPage ); //выводим результаты
+            setTimeout(function(){
+                $(".page").removeClass("active");
+                $(".page-"+indexPage).addClass("active");
+            });
+            if(this.dirty) this.checkDots();   
+        },
+        checkDots(){
+            if( this.pages <= maxAmountOfPages ) {
+                this.visiblePages = this.pages; 
+            }
+            else {
+                this.visiblePages = maxAmountOfPages;
+                this.rightMax = true; 
+                this.leftMax = false;
+            }
+        },
+        clickDots: function (dotName){
+            this.dirty = false;
+            this.leftMax = true;
+            this.rightMax = true; 
+            let first, last, obj;
+            dotName === "right" ?  obj = this.rightDir() : obj = this.leftDir();
+            [ this.first, this.visiblePages ] = obj;
+            this.navigate( obj[0] );
+        },
+        rightDir: function(){
+            let first, last, obj;
+            last = this.visiblePages + maxAmountOfPages;
+            first = this.visiblePages;
+            if( last >= this.pages ){ 
+                last =  this.pages;
+                this.rightMax = false; 
+            }
+            obj = [ first, last ];
+            return obj;
+        },
+        leftDir: function(){
+            let first, last, obj;
+            last = this.first;
+            first = last - maxAmountOfPages;
+            if(first === 1) this.leftMax = false; 
+            if(first <= 0){
+                   first = 1;
+                   this.leftMax = false; 
+            }
+            obj = [ first, last ];
+            return obj;
+        },
+        range: function(min,max){
+            var array = [],
+                j = 0;
+                for(var i = min; i <= max; i++){
+                    array[j] = i;
+                    j++;
+            }
+            return array;
+        }
+    } 
+});
+var vm2 = new Vue({ 
+    el: '#c2c-search', 
+    data : { 
+        show : false,
+        searchText : "",
+        pagination: false,
+        perPage : perPage,
+        count : 0
+    },
+    components: {
+        SearchContent
+    },
+    created: function () {
+        /*
+        var url = new URL(cur_href);
+        var searchText = url.searchParams.get("data");
+        if(window.location.pathname === "/specials/search" && searchText !== null){
+            console.log(searchText);
+            this.getResults(searchText);
+            this.searchText = searchText;
+            this.show = true;
+            //log(searchText.length);
+        }
+        */
+         this.getResults(searchText);
+            this.searchText = searchText;
+            this.show = true;
+        this.trigger();
+        
+    },
+    updated: function(){
+      this.trigger();
+    },
+    methods : {
+        trigger: function(){
+             this.show ? $(".c2c_page .rasporka").addClass("big") : $(".c2c_page .rasporka").removeClass("big");
+        },
+         sendData: function () {
+            if(window.location.pathname !== "/specials/search") {
+                 window.location.href = url2+"?data="+this.searchText; //переадрессуем на страницу поиска
+            }
+            this.getResults(this.searchText);
+         },
+         openMap: function(){
+              $(".map_tg").toggleClass("open");
+         },
+         getResults: function(searchText){
+            var self = this;
+            $.get( url,{ 
+                searchText: searchText,
+                offset: 0,
+                limit: 11
+            }, 
+            function( data ) {
+                if( !IsJsonString(data) || data === null){
+                    self.notFound();
+                }
+                else { 
+                var json = JSON.parse(data);
+                if(!json.length) { self.notFound(); return; } 
+                    for (let i = 0; i < 5; i++){
+                         var copy = Object.assign({}, json);
+                         for(let i in copy){
+                             json.push(copy[i]);
+                         } 
+                    } 
+                    vm.shownotfound = false;
+                    vm.setResults(json);
+                }
+            }); 
+               
+         },
+         notFound: function(){
+            vm.shownotfound = true;
+            vm.loader = false;
+            vm.results = {};
+         }
+    }
+});
+
+   </script>
+</body>
+</html>

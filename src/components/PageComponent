@@ -1,0 +1,5 @@
+var PageComponent = Vue.component('page-component', {
+  props : ["page", "maxAmount"],
+  template: `<div v-on:click="$emit('navigate-of')" class="page">{{page}}</div>`,
+
+});

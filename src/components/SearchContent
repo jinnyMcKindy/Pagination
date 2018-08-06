@@ -1,0 +1,5 @@
+// Определяем новый компонент, рендер результатов
+var SearchContent = Vue.component('search-content', {
+  template: `<div class="search-content"></div>`
+});
+
