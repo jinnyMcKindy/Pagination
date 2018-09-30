@@ -13,7 +13,7 @@ export default {
   components: {
     Pagination
   },
- data () { return {  } }
+ data () { return { msg : "hello" } }
 }
 </script>
 

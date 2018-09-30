@@ -1,5 +1,6 @@
 <template>
   <div class="container">
+    {{msg}}
     <results class="srch-results" v-for="result in visible" 
             :key="result.id"
             :title="result.title"
@@ -34,7 +35,7 @@ import DotComponent from './DotComponent';
 
 export default {
   name: 'Pagination',
-  props:  [],
+  props:  ['msg'],
   data: function () {
     return {
        text : "",
@@ -102,7 +103,7 @@ export default {
                this.visible = this.results; //выводим результаты
                return;
             }
-            var pages = Math.ceil( len/ this.perPage );
+            let pages = Math.ceil( len/ this.perPage );
             this.pages = pages;
             this.navigate(1); //навигация с 1 страницы
         },
@@ -137,7 +138,7 @@ export default {
             this.dirty = false;
             this.leftMax = true;
             this.rightMax = true; 
-            let first, last, obj;
+            let obj;
             dotName === "right" ?  obj = this.rightDir() : obj = this.leftDir();
             [ this.first, this.visiblePages ] = obj;
             this.navigate( obj[0] );
