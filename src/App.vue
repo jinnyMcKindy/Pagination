@@ -1,4 +1,3 @@
-
 <template>
   <div id="app">
     <Pagination
@@ -10,7 +9,6 @@
     />
   </div>
 </template>
-
 <script>
 import Pagination from './components/Pagination'
 
