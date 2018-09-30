@@ -1,6 +1,5 @@
 <template>
   <div class="container">
-    {{msg}}
     <results class="srch-results" v-for="result in visible" 
             :key="result.id"
             :title="result.title"
@@ -12,17 +11,25 @@
          <dot-component 
             :Max="leftMax" 
             v-on:click-dots="clickDots" 
-            value="left">
+            value="left"
+            :icon="leftIcon"
+         >
          </dot-component>
          <page-component 
             v-for="(page, index) in range(first, visiblePages)" 
-                     :key="page.id"
-                     v-on:navigate-of="navigate(page)" 
-                     :page="page" 
-                     :class="['page-' + page]"
+            :key="page.id"
+            v-on:navigate-of="navigate(page)"
+            :page="page"
+            :class="['page-' + page]"
          >
         </page-component>
-          <dot-component v-bind:Max="rightMax" v-on:click-dots="clickDots" value="right"></dot-component>
+        <dot-component
+          :Max="rightMax"
+          v-on:click-dots="clickDots"
+          value="right"
+          :icon="rightIcon"
+        >
+        </dot-component>
      </div>
   </div>
 </template>
@@ -35,66 +42,28 @@ import DotComponent from './DotComponent';
 
 export default {
   name: 'Pagination',
-  props:  ['msg'],
+  props:  [ "leftIcon", "rightIcon", "results", "maxAmountOfPages", "perPage" ],
   data: function () {
     return {
        text : "",
        shownotfound: false,
-       results : {},  //all results
        size : 0,
        pages: 0,
        visiblePages: 0,
-       perPage: 4,
        visible : {}, //visible results, 
        rightMax: false,
        leftMax: false,
        first: 1,
        dirty: true,
        oldUrl : "",
-       maxAmountOfPages : 5
     }
   },
     components: {
           Results, PageComponent, DotComponent
     },
     created : function(){
-        var json = [
-            {title : "Title1", description : "Description", url : "www.google.com"},
-            {title : "Title2", description : "Description", url : "www.google.com"},
-            {title : "Title3", description : "Description", url : "www.google.com"},
-            {title : "Title4", description : "Description", url : "www.google.com"},
-            {title : "Title5", description : "Description", url : "www.google.com"},
-            {title : "Title6", description : "Description", url : "www.google.com"},
-            {title : "Title7", description : "Description", url : "www.google.com"},
-            {title : "Title8", description : "Description", url : "www.google.com"},
-            {title : "Title9", description : "Description", url : "www.google.com"},
-            {title : "Title10", description : "Description", url : "www.google.com"},
-            {title : "title11", description : "Description", url : "www.google.com"},
-            {title : "Title12", description : "Description", url : "www.google.com"},
-            {title : "Title13", description : "Description", url : "www.google.com"},
-            {title : "Title14", description : "Description", url : "www.google.com"},
-            {title : "Title15", description : "Description", url : "www.google.com"},
-            {title : "Title16", description : "Description", url : "www.google.com"},
-            {title : "Title17", description : "Description", url : "www.google.com"},
-            {title : "Title18", description : "Description", url : "www.google.com"},
-            {title : "Title19", description : "Description", url : "www.google.com"},
-            {title : "Title20", description : "Description", url : "www.google.com"},
-            {title : "Title21", description : "Description", url : "www.google.com"},
-            {title : "Title22", description : "Description", url : "www.google.com"},
-            {title : "Title23", description : "Description", url : "www.google.com"},
-            {title : "Title24", description : "Description", url : "www.google.com"},
-            {title : "Title25", description : "Description", url : "www.google.com"},
-            {title : "Title26", description : "Description", url : "www.google.com"},
-            {title : "Title27", description : "Description", url : "www.google.com"},
-            {title : "Title28", description : "Description", url : "www.google.com"},
-            {title : "Title29", description : "Description", url : "www.google.com"},
-            {title : "Title30", description : "Description", url : "www.google.com"},
-            {title : "Title31", description : "Description", url : "www.google.com"},
-            {title : "Title32", description : "Description", url : "www.google.com"},
-        ];
-        this.results = json;
-        this.size = json.length; //количество найденных совпадений
-        this.setPages(json.length); //высчитываем кол-во страниц для пагинации
+        this.size = this.results.length; //количество найденных совпадений
+        this.setPages(this.results.length); //высчитываем кол-во страниц для пагинации
     },
     methods: { 
         setPages : function(len){
