@@ -4,9 +4,8 @@
 
 ### Demo
 
-<img src="pagination-demo.gif" alt="demo">
-
 [Demo](https://volokolamskspb.github.io/Custom-pagination-on-VueJs/)
+<img src="pagination-demo.gif" alt="demo">
 
 ## Build Setup
 
