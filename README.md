@@ -1,6 +1,12 @@
 # vuejs-pagination
 
-> A Vue.js project
+> A Vue.js pagination
+
+### Demo
+
+<img src="pagination-demo.gif" alt="demo">
+
+[Demo](https://volokolamskspb.github.io/Custom-pagination-on-VueJs/)
 
 ## Build Setup
 
@@ -42,6 +48,4 @@ Example:
       :perPage="perPage"
     />
 ```
-### Demo
 
-<img src="pagination-demo.gif" alt="demo">
